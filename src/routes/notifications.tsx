@@ -58,7 +58,6 @@ function NotificationsPage() {
         .from("notifications")
         .select(
           `id, type, read, created_at, actor_id, post_id, comment_id, conversation_id, message_id,
-           actor:profiles!notifications_actor_id_fkey(id, username, display_name, avatar_url),
            post:posts(id, title, image_url),
            comment:post_comments(content),
            message:messages(content),
@@ -68,8 +67,19 @@ function NotificationsPage() {
         .order("created_at", { ascending: false })
         .limit(100);
 
+      const rows = (data as any[]) ?? [];
+      const actorIds = Array.from(new Set(rows.map((r) => r.actor_id)));
+      let actorMap: Record<string, Actor> = {};
+      if (actorIds.length > 0) {
+        const { data: actors } = await supabase
+          .from("profiles")
+          .select("id, username, display_name, avatar_url")
+          .in("id", actorIds);
+        actorMap = Object.fromEntries((actors ?? []).map((a) => [a.id, a as Actor]));
+      }
+
       if (!cancelled) {
-        setItems((data as any) ?? []);
+        setItems(rows.map((r) => ({ ...r, actor: actorMap[r.actor_id] ?? null })));
         setBusy(false);
       }
     };

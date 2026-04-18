@@ -1,1 +1,4 @@
 project_id = "pgngyuieyonowdgazboq"
+
+[functions.recommend-destinations]
+verify_jwt = false

@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Globe, Instagram, Music2, Twitter, Youtube } from "lucide-react";
+import { Globe, Instagram, Music2, Twitter, Youtube, Map as MapIcon } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { BottomNav } from "@/components/BottomNav";
 import { UserAvatar } from "@/components/Avatar";
+import { TravelMap, type MapPin } from "@/components/TravelMap";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -14,13 +15,16 @@ export const Route = createFileRoute("/u/$username")({
   component: UserProfile,
 });
 
+type ProfilePost = Pick<Tables<"posts">, "id" | "image_url" | "title" | "latitude" | "longitude">;
+
 function UserProfile() {
   const { username } = Route.useParams();
   const { user } = useAuth();
   const [profile, setProfile] = useState<Tables<"profiles"> | null>(null);
-  const [posts, setPosts] = useState<Pick<Tables<"posts">, "id" | "image_url" | "title">[]>([]);
+  const [posts, setPosts] = useState<ProfilePost[]>([]);
   const [notFound, setNotFound] = useState(false);
   const [startingDM, setStartingDM] = useState(false);
+  const [view, setView] = useState<"grid" | "map">("grid");
 
   useEffect(() => {
     supabase
@@ -36,22 +40,23 @@ function UserProfile() {
         setProfile(data);
         supabase
           .from("posts")
-          .select("id, image_url, title")
+          .select("id, image_url, title, latitude, longitude")
           .eq("user_id", data.id)
           .order("created_at", { ascending: false })
-          .then(({ data: p }) => setPosts(p ?? []));
+          .then(({ data: p }) => setPosts((p as ProfilePost[]) ?? []));
       });
   }, [username]);
 
   const startDM = async () => {
     if (!user || !profile || user.id === profile.id) return;
     setStartingDM(true);
-    // Find existing direct conversation between the two users
     const { data: mine } = await supabase
       .from("conversation_participants")
       .select("conversation_id, conversations!inner(type)")
       .eq("user_id", user.id);
-    const myDirect = (mine ?? []).filter((m) => (m as never as { conversations: { type: string } }).conversations.type === "direct");
+    const myDirect = (mine ?? []).filter(
+      (m) => (m as never as { conversations: { type: string } }).conversations.type === "direct",
+    );
     let convId: string | null = null;
     if (myDirect.length) {
       const ids = myDirect.map((m) => m.conversation_id);
@@ -104,6 +109,17 @@ function UserProfile() {
     profile.website && { icon: Globe, label: "Website", href: profile.website },
   ].filter(Boolean) as { icon: typeof Globe; label: string; href: string }[];
 
+  const mapPins: MapPin[] = posts
+    .filter((p) => p.latitude != null && p.longitude != null)
+    .map((p) => ({
+      id: p.id,
+      lat: p.latitude as number,
+      lng: p.longitude as number,
+      title: p.title,
+      image_url: p.image_url,
+      href: `/p/${p.id}`,
+    }));
+
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
       <Navbar />
@@ -127,6 +143,12 @@ function UserProfile() {
             {profile.bio && <p className="mt-2 text-sm text-foreground/85">{profile.bio}</p>}
             <p className="mt-3 text-sm text-muted-foreground">
               <span className="font-semibold text-foreground">{posts.length}</span> {posts.length === 1 ? "post" : "posts"}
+              {mapPins.length > 0 && (
+                <>
+                  {" · "}
+                  <span className="font-semibold text-foreground">{mapPins.length}</span> pinned
+                </>
+              )}
             </p>
             {socials.length > 0 && (
               <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
@@ -146,23 +168,45 @@ function UserProfile() {
           </div>
         </header>
 
-        <div className="mt-10 grid grid-cols-3 gap-1 sm:gap-2">
-          {posts.map((p) => (
-            <Link
-              key={p.id}
-              to="/p/$postId"
-              params={{ postId: p.id }}
-              className="group relative aspect-square overflow-hidden bg-muted sm:rounded-md"
-            >
-              <img src={p.image_url} alt={p.title} loading="lazy" className="h-full w-full object-cover transition-spring group-hover:scale-110" />
-            </Link>
-          ))}
-          {posts.length === 0 && (
-            <div className="col-span-3 rounded-2xl border border-dashed border-border p-12 text-center text-sm text-muted-foreground">
-              No posts yet.
-            </div>
-          )}
+        <div className="mt-8 flex justify-center gap-1 border-b border-border/50">
+          <button
+            onClick={() => setView("grid")}
+            className={`px-4 py-2 text-sm font-medium transition-smooth ${view === "grid" ? "border-b-2 border-primary text-foreground" : "text-muted-foreground"}`}
+          >
+            Posts
+          </button>
+          <button
+            onClick={() => setView("map")}
+            disabled={mapPins.length === 0}
+            className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-smooth disabled:opacity-40 ${view === "map" ? "border-b-2 border-primary text-foreground" : "text-muted-foreground"}`}
+          >
+            <MapIcon className="h-4 w-4" /> Map
+          </button>
         </div>
+
+        {view === "grid" ? (
+          <div className="mt-4 grid grid-cols-3 gap-1 sm:gap-2">
+            {posts.map((p) => (
+              <Link
+                key={p.id}
+                to="/p/$postId"
+                params={{ postId: p.id }}
+                className="group relative aspect-square overflow-hidden bg-muted sm:rounded-md"
+              >
+                <img src={p.image_url} alt={p.title} loading="lazy" className="h-full w-full object-cover transition-spring group-hover:scale-110" />
+              </Link>
+            ))}
+            {posts.length === 0 && (
+              <div className="col-span-3 rounded-2xl border border-dashed border-border p-12 text-center text-sm text-muted-foreground">
+                No posts yet.
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="mt-4">
+            <TravelMap pins={mapPins} height={420} />
+          </div>
+        )}
       </main>
       <BottomNav />
     </div>

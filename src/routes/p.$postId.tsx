@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { BottomNav } from "@/components/BottomNav";
 import { FeedPost } from "@/components/FeedPost";
+import { TravelMap } from "@/components/TravelMap";
+import { Recommendations } from "@/components/Recommendations";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -37,7 +39,7 @@ function PostPage() {
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
       <Navbar />
-      <main className="mx-auto max-w-2xl px-4 py-6">
+      <main className="mx-auto max-w-2xl px-4 py-6 space-y-6">
         {notFound ? (
           <div className="rounded-2xl border border-border bg-card p-12 text-center">
             <p className="text-muted-foreground">Post not found.</p>
@@ -50,8 +52,37 @@ function PostPage() {
         ) : (
           <>
             <FeedPost post={post} />
+
+            {post.latitude != null && post.longitude != null && (
+              <section>
+                <h2 className="mb-2 font-display text-lg font-bold">On the map</h2>
+                <TravelMap
+                  height={240}
+                  pins={[
+                    {
+                      id: post.id,
+                      lat: post.latitude,
+                      lng: post.longitude,
+                      title: post.title,
+                      image_url: post.image_url,
+                    },
+                  ]}
+                />
+              </section>
+            )}
+
+            <Recommendations
+              postId={post.id}
+              title={post.title}
+              location={post.location}
+              country={post.country}
+              caption={post.caption}
+              lat={post.latitude}
+              lng={post.longitude}
+            />
+
             {post.user_id === user?.id && (
-              <div className="mt-4 text-center">
+              <div className="text-center">
                 <Button
                   variant="outline"
                   onClick={async () => {

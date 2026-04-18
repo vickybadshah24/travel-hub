@@ -85,6 +85,85 @@ export type Database = {
           },
         ]
       }
+      group_invites: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          invitee_id: string
+          inviter_id: string
+          responded_at: string | null
+          status: Database["public"]["Enums"]["invite_status"]
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          invitee_id: string
+          inviter_id: string
+          responded_at?: string | null
+          status?: Database["public"]["Enums"]["invite_status"]
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          invitee_id?: string
+          inviter_id?: string
+          responded_at?: string | null
+          status?: Database["public"]["Enums"]["invite_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_invites_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_join_requests: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          message: string | null
+          responded_at: string | null
+          responded_by: string | null
+          status: Database["public"]["Enums"]["request_status"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          message?: string | null
+          responded_at?: string | null
+          responded_by?: string | null
+          status?: Database["public"]["Enums"]["request_status"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          message?: string | null
+          responded_at?: string | null
+          responded_by?: string | null
+          status?: Database["public"]["Enums"]["request_status"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_join_requests_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_members: {
         Row: {
           group_id: string
@@ -213,10 +292,13 @@ export type Database = {
           comment_id: string | null
           conversation_id: string | null
           created_at: string
+          group_id: string | null
           id: string
+          invite_id: string | null
           message_id: string | null
           post_id: string | null
           read: boolean
+          request_id: string | null
           type: Database["public"]["Enums"]["notification_type"]
           user_id: string
         }
@@ -225,10 +307,13 @@ export type Database = {
           comment_id?: string | null
           conversation_id?: string | null
           created_at?: string
+          group_id?: string | null
           id?: string
+          invite_id?: string | null
           message_id?: string | null
           post_id?: string | null
           read?: boolean
+          request_id?: string | null
           type: Database["public"]["Enums"]["notification_type"]
           user_id: string
         }
@@ -237,10 +322,13 @@ export type Database = {
           comment_id?: string | null
           conversation_id?: string | null
           created_at?: string
+          group_id?: string | null
           id?: string
+          invite_id?: string | null
           message_id?: string | null
           post_id?: string | null
           read?: boolean
+          request_id?: string | null
           type?: Database["public"]["Enums"]["notification_type"]
           user_id?: string
         }
@@ -260,6 +348,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "notifications_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "group_invites"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "notifications_message_id_fkey"
             columns: ["message_id"]
             isOneToOne: false
@@ -271,6 +373,13 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "group_join_requests"
             referencedColumns: ["id"]
           },
         ]
@@ -357,7 +466,9 @@ export type Database = {
           created_at: string
           id: string
           image_url: string
+          latitude: number | null
           location: string
+          longitude: number | null
           title: string
           user_id: string
           visited_at: string | null
@@ -368,7 +479,9 @@ export type Database = {
           created_at?: string
           id?: string
           image_url: string
+          latitude?: number | null
           location: string
+          longitude?: number | null
           title: string
           user_id: string
           visited_at?: string | null
@@ -379,7 +492,9 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string
+          latitude?: number | null
           location?: string
+          longitude?: number | null
           title?: string
           user_id?: string
           visited_at?: string | null
@@ -461,7 +576,15 @@ export type Database = {
       conversation_type: "direct" | "group"
       group_privacy: "public" | "private"
       group_role: "owner" | "admin" | "member"
-      notification_type: "like" | "comment" | "group_message"
+      invite_status: "pending" | "accepted" | "declined"
+      notification_type:
+        | "like"
+        | "comment"
+        | "group_message"
+        | "group_invite"
+        | "join_request"
+        | "request_approved"
+      request_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -592,7 +715,16 @@ export const Constants = {
       conversation_type: ["direct", "group"],
       group_privacy: ["public", "private"],
       group_role: ["owner", "admin", "member"],
-      notification_type: ["like", "comment", "group_message"],
+      invite_status: ["pending", "accepted", "declined"],
+      notification_type: [
+        "like",
+        "comment",
+        "group_message",
+        "group_invite",
+        "join_request",
+        "request_approved",
+      ],
+      request_status: ["pending", "approved", "rejected"],
     },
   },
 } as const

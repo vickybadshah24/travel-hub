@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { MapPicker } from "@/components/MapPicker";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 
@@ -24,6 +25,7 @@ function NewPost() {
   const [country, setCountry] = useState("");
   const [caption, setCaption] = useState("");
   const [visitedAt, setVisitedAt] = useState("");
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -63,6 +65,8 @@ function NewPost() {
         caption: caption || null,
         image_url: publicUrl,
         visited_at: visitedAt || null,
+        latitude: coords?.lat ?? null,
+        longitude: coords?.lng ?? null,
       });
       if (insErr) throw insErr;
 
@@ -83,7 +87,7 @@ function NewPost() {
       <Navbar />
       <main className="mx-auto max-w-2xl px-4 py-12">
         <h1 className="font-display text-4xl font-bold">Share a destination</h1>
-        <p className="mt-2 text-muted-foreground">Add a photo, tag the spot, tell the story.</p>
+        <p className="mt-2 text-muted-foreground">Add a photo, drop a pin, tell the story.</p>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-6">
           <label className="block">
@@ -112,9 +116,23 @@ function NewPost() {
             <Input id="title" required maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Sunrise over Bagan" />
           </div>
 
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1">
+              <MapPin className="h-3.5 w-3.5" /> Pin the destination
+            </Label>
+            <MapPicker
+              value={coords}
+              onChange={(v) => {
+                setCoords({ lat: v.lat, lng: v.lng });
+                if (v.city && !location) setLocation(v.city);
+                if (v.country && !country) setCountry(v.country);
+              }}
+            />
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="location"><MapPin className="inline h-3.5 w-3.5" /> Location</Label>
+              <Label htmlFor="location">Location</Label>
               <Input id="location" required maxLength={120} value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Bagan" />
             </div>
             <div className="space-y-2">

@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { Heart, MessageCircle, MapPin, Send } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Heart, MessageCircle, MapPin, Send, Bookmark } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -21,6 +21,8 @@ export function FeedPost({ post }: { post: Post }) {
   >([]);
   const [showComments, setShowComments] = useState(false);
   const [draft, setDraft] = useState("");
+  const [burst, setBurst] = useState(false);
+  const lastTap = useRef<number>(0);
 
   useEffect(() => {
     let mounted = true;
@@ -50,11 +52,12 @@ export function FeedPost({ post }: { post: Post }) {
     }
   };
 
-  const toggleLike = async () => {
+  const doLike = async (force?: boolean) => {
     if (!user) {
       toast.error("Sign in to like");
       return;
     }
+    if (force === true && liked) return; // double-tap on already-liked: just animate
     if (liked) {
       setLiked(false);
       setLikeCount((c) => c - 1);
@@ -64,6 +67,17 @@ export function FeedPost({ post }: { post: Post }) {
       setLikeCount((c) => c + 1);
       await supabase.from("post_likes").insert({ post_id: post.id, user_id: user.id });
     }
+  };
+
+  const handleImageTap = () => {
+    const now = Date.now();
+    if (now - lastTap.current < 300) {
+      // double tap
+      setBurst(true);
+      setTimeout(() => setBurst(false), 700);
+      doLike(true);
+    }
+    lastTap.current = now;
   };
 
   const sendComment = async () => {
@@ -106,18 +120,38 @@ export function FeedPost({ post }: { post: Post }) {
         </div>
       </div>
 
-      {/* Image */}
-      <div className="relative aspect-square w-full overflow-hidden bg-muted">
-        <img src={post.image_url} alt={post.title} className="h-full w-full object-cover" loading="lazy" />
+      {/* Image with double-tap */}
+      <div
+        className="relative aspect-square w-full overflow-hidden bg-muted select-none"
+        onClick={handleImageTap}
+        onDoubleClick={(e) => {
+          e.preventDefault();
+          setBurst(true);
+          setTimeout(() => setBurst(false), 700);
+          doLike(true);
+        }}
+      >
+        <img src={post.image_url} alt={post.title} className="h-full w-full object-cover" loading="lazy" draggable={false} />
+        {burst && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <Heart className="h-28 w-28 fill-white text-white drop-shadow-2xl animate-heart-burst" />
+          </div>
+        )}
       </div>
 
       {/* Actions */}
       <div className="flex items-center gap-4 px-4 pt-3">
-        <button onClick={toggleLike} className="transition-spring hover:scale-110" aria-label="Like">
+        <button onClick={() => doLike()} className="transition-spring hover:scale-110" aria-label="Like">
           <Heart className={`h-6 w-6 ${liked ? "fill-accent text-accent" : ""}`} />
         </button>
         <button onClick={loadComments} className="transition-spring hover:scale-110" aria-label="Comments">
           <MessageCircle className="h-6 w-6" />
+        </button>
+        <Link to="/p/$postId" params={{ postId: post.id }} className="transition-spring hover:scale-110" aria-label="Share">
+          <Send className="h-6 w-6" />
+        </Link>
+        <button className="ml-auto transition-spring hover:scale-110" aria-label="Save">
+          <Bookmark className="h-6 w-6" />
         </button>
       </div>
 

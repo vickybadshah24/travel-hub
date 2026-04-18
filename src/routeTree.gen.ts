@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as NewRouteImport } from './routes/new'
+import { Route as MapRouteImport } from './routes/map'
 import { Route as GroupsRouteImport } from './routes/groups'
 import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -35,6 +36,11 @@ const NotificationsRoute = NotificationsRouteImport.update({
 const NewRoute = NewRouteImport.update({
   id: '/new',
   path: '/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MapRoute = MapRouteImport.update({
+  id: '/map',
+  path: '/map',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GroupsRoute = GroupsRouteImport.update({
@@ -88,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/explore': typeof ExploreRoute
   '/groups': typeof GroupsRouteWithChildren
+  '/map': typeof MapRoute
   '/new': typeof NewRoute
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
@@ -102,6 +109,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/explore': typeof ExploreRoute
   '/groups': typeof GroupsRouteWithChildren
+  '/map': typeof MapRoute
   '/new': typeof NewRoute
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
@@ -117,6 +125,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/explore': typeof ExploreRoute
   '/groups': typeof GroupsRouteWithChildren
+  '/map': typeof MapRoute
   '/new': typeof NewRoute
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
@@ -133,6 +142,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/explore'
     | '/groups'
+    | '/map'
     | '/new'
     | '/notifications'
     | '/profile'
@@ -147,6 +157,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/explore'
     | '/groups'
+    | '/map'
     | '/new'
     | '/notifications'
     | '/profile'
@@ -161,6 +172,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/explore'
     | '/groups'
+    | '/map'
     | '/new'
     | '/notifications'
     | '/profile'
@@ -176,6 +188,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ExploreRoute: typeof ExploreRoute
   GroupsRoute: typeof GroupsRouteWithChildren
+  MapRoute: typeof MapRoute
   NewRoute: typeof NewRoute
   NotificationsRoute: typeof NotificationsRoute
   ProfileRoute: typeof ProfileRoute
@@ -206,6 +219,13 @@ declare module '@tanstack/react-router' {
       path: '/new'
       fullPath: '/new'
       preLoaderRoute: typeof NewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/map': {
+      id: '/map'
+      path: '/map'
+      fullPath: '/map'
+      preLoaderRoute: typeof MapRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/groups': {
@@ -290,6 +310,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ExploreRoute: ExploreRoute,
   GroupsRoute: GroupsRouteWithChildren,
+  MapRoute: MapRoute,
   NewRoute: NewRoute,
   NotificationsRoute: NotificationsRoute,
   ProfileRoute: ProfileRoute,

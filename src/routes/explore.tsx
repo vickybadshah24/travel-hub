@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Navbar } from "@/components/Navbar";
-import { PostCard } from "@/components/PostCard";
+import { BottomNav } from "@/components/BottomNav";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -10,7 +10,7 @@ export const Route = createFileRoute("/explore")({
   component: Explore,
 });
 
-type Post = Tables<"posts"> & { profiles?: Pick<Tables<"profiles">, "username" | "display_name" | "avatar_url"> | null };
+type Post = Pick<Tables<"posts">, "id" | "image_url" | "title">;
 
 function Explore() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -19,35 +19,50 @@ function Explore() {
   useEffect(() => {
     supabase
       .from("posts")
-      .select("*, profiles(username, display_name, avatar_url)")
+      .select("id, image_url, title")
       .order("created_at", { ascending: false })
+      .limit(60)
       .then(({ data }) => {
-        setPosts((data as unknown as Post[]) ?? []);
+        setPosts(data ?? []);
         setLoading(false);
       });
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20 md:pb-0">
       <Navbar />
-      <main className="mx-auto max-w-6xl px-4 py-12">
-        <header className="mb-10">
-          <h1 className="font-display text-5xl font-bold">Explore</h1>
-          <p className="mt-2 text-muted-foreground">Every destination shared by the community.</p>
+      <main className="mx-auto max-w-4xl px-1 sm:px-4 py-4 sm:py-8">
+        <header className="mb-4 px-3 sm:px-0">
+          <h1 className="font-display text-3xl sm:text-5xl font-bold">Explore</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Discover destinations from travelers everywhere.</p>
         </header>
-
         {loading ? (
-          <p className="text-muted-foreground">Loading...</p>
+          <p className="px-4 text-muted-foreground">Loading...</p>
         ) : posts.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-card/50 p-12 text-center text-muted-foreground">
-            No journeys yet. Be the first.
+          <div className="m-3 rounded-2xl border border-dashed border-border bg-card/50 p-12 text-center text-muted-foreground">
+            No journeys yet.
           </div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {posts.map((p) => <PostCard key={p.id} post={p} />)}
+          <div className="grid grid-cols-3 gap-1 sm:gap-2">
+            {posts.map((p) => (
+              <Link
+                key={p.id}
+                to="/p/$postId"
+                params={{ postId: p.id }}
+                className="group relative aspect-square overflow-hidden bg-muted sm:rounded-md"
+              >
+                <img
+                  src={p.image_url}
+                  alt={p.title}
+                  loading="lazy"
+                  className="h-full w-full object-cover transition-spring group-hover:scale-110"
+                />
+              </Link>
+            ))}
           </div>
         )}
       </main>
+      <BottomNav />
     </div>
   );
 }

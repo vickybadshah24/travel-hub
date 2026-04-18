@@ -2,13 +2,14 @@ import { Link } from "@tanstack/react-router";
 import { Home, Compass, PlusSquare, Users, MessageCircle } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 
-const items = [
+type Item = { to: "/" | "/explore" | "/new" | "/groups" | "/messages"; icon: typeof Home; label: string; auth?: boolean };
+const items: Item[] = [
   { to: "/", icon: Home, label: "Home" },
   { to: "/explore", icon: Compass, label: "Explore" },
   { to: "/new", icon: PlusSquare, label: "Post", auth: true },
   { to: "/groups", icon: Users, label: "Groups" },
   { to: "/messages", icon: MessageCircle, label: "Chat", auth: true },
-] as const;
+];
 
 export function BottomNav() {
   const { user } = useAuth();

@@ -11,9 +11,15 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as NewRouteImport } from './routes/new'
+import { Route as GroupsRouteImport } from './routes/groups'
 import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MessagesIndexRouteImport } from './routes/messages.index'
+import { Route as UUsernameRouteImport } from './routes/u.$username'
+import { Route as PPostIdRouteImport } from './routes/p.$postId'
+import { Route as MessagesConvIdRouteImport } from './routes/messages.$convId'
+import { Route as GroupsSlugRouteImport } from './routes/groups.$slug'
 
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
@@ -23,6 +29,11 @@ const ProfileRoute = ProfileRouteImport.update({
 const NewRoute = NewRouteImport.update({
   id: '/new',
   path: '/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GroupsRoute = GroupsRouteImport.update({
+  id: '/groups',
+  path: '/groups',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExploreRoute = ExploreRouteImport.update({
@@ -40,43 +51,125 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MessagesIndexRoute = MessagesIndexRouteImport.update({
+  id: '/messages/',
+  path: '/messages/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UUsernameRoute = UUsernameRouteImport.update({
+  id: '/u/$username',
+  path: '/u/$username',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PPostIdRoute = PPostIdRouteImport.update({
+  id: '/p/$postId',
+  path: '/p/$postId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MessagesConvIdRoute = MessagesConvIdRouteImport.update({
+  id: '/messages/$convId',
+  path: '/messages/$convId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GroupsSlugRoute = GroupsSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => GroupsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/explore': typeof ExploreRoute
+  '/groups': typeof GroupsRouteWithChildren
   '/new': typeof NewRoute
   '/profile': typeof ProfileRoute
+  '/groups/$slug': typeof GroupsSlugRoute
+  '/messages/$convId': typeof MessagesConvIdRoute
+  '/p/$postId': typeof PPostIdRoute
+  '/u/$username': typeof UUsernameRoute
+  '/messages/': typeof MessagesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/explore': typeof ExploreRoute
+  '/groups': typeof GroupsRouteWithChildren
   '/new': typeof NewRoute
   '/profile': typeof ProfileRoute
+  '/groups/$slug': typeof GroupsSlugRoute
+  '/messages/$convId': typeof MessagesConvIdRoute
+  '/p/$postId': typeof PPostIdRoute
+  '/u/$username': typeof UUsernameRoute
+  '/messages': typeof MessagesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/explore': typeof ExploreRoute
+  '/groups': typeof GroupsRouteWithChildren
   '/new': typeof NewRoute
   '/profile': typeof ProfileRoute
+  '/groups/$slug': typeof GroupsSlugRoute
+  '/messages/$convId': typeof MessagesConvIdRoute
+  '/p/$postId': typeof PPostIdRoute
+  '/u/$username': typeof UUsernameRoute
+  '/messages/': typeof MessagesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/explore' | '/new' | '/profile'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/explore'
+    | '/groups'
+    | '/new'
+    | '/profile'
+    | '/groups/$slug'
+    | '/messages/$convId'
+    | '/p/$postId'
+    | '/u/$username'
+    | '/messages/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/explore' | '/new' | '/profile'
-  id: '__root__' | '/' | '/auth' | '/explore' | '/new' | '/profile'
+  to:
+    | '/'
+    | '/auth'
+    | '/explore'
+    | '/groups'
+    | '/new'
+    | '/profile'
+    | '/groups/$slug'
+    | '/messages/$convId'
+    | '/p/$postId'
+    | '/u/$username'
+    | '/messages'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth'
+    | '/explore'
+    | '/groups'
+    | '/new'
+    | '/profile'
+    | '/groups/$slug'
+    | '/messages/$convId'
+    | '/p/$postId'
+    | '/u/$username'
+    | '/messages/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
   ExploreRoute: typeof ExploreRoute
+  GroupsRoute: typeof GroupsRouteWithChildren
   NewRoute: typeof NewRoute
   ProfileRoute: typeof ProfileRoute
+  MessagesConvIdRoute: typeof MessagesConvIdRoute
+  PPostIdRoute: typeof PPostIdRoute
+  UUsernameRoute: typeof UUsernameRoute
+  MessagesIndexRoute: typeof MessagesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -93,6 +186,13 @@ declare module '@tanstack/react-router' {
       path: '/new'
       fullPath: '/new'
       preLoaderRoute: typeof NewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/groups': {
+      id: '/groups'
+      path: '/groups'
+      fullPath: '/groups'
+      preLoaderRoute: typeof GroupsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/explore': {
@@ -116,15 +216,66 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/messages/': {
+      id: '/messages/'
+      path: '/messages'
+      fullPath: '/messages/'
+      preLoaderRoute: typeof MessagesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/u/$username': {
+      id: '/u/$username'
+      path: '/u/$username'
+      fullPath: '/u/$username'
+      preLoaderRoute: typeof UUsernameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/p/$postId': {
+      id: '/p/$postId'
+      path: '/p/$postId'
+      fullPath: '/p/$postId'
+      preLoaderRoute: typeof PPostIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/messages/$convId': {
+      id: '/messages/$convId'
+      path: '/messages/$convId'
+      fullPath: '/messages/$convId'
+      preLoaderRoute: typeof MessagesConvIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/groups/$slug': {
+      id: '/groups/$slug'
+      path: '/$slug'
+      fullPath: '/groups/$slug'
+      preLoaderRoute: typeof GroupsSlugRouteImport
+      parentRoute: typeof GroupsRoute
+    }
   }
 }
+
+interface GroupsRouteChildren {
+  GroupsSlugRoute: typeof GroupsSlugRoute
+}
+
+const GroupsRouteChildren: GroupsRouteChildren = {
+  GroupsSlugRoute: GroupsSlugRoute,
+}
+
+const GroupsRouteWithChildren =
+  GroupsRoute._addFileChildren(GroupsRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   ExploreRoute: ExploreRoute,
+  GroupsRoute: GroupsRouteWithChildren,
   NewRoute: NewRoute,
   ProfileRoute: ProfileRoute,
+  MessagesConvIdRoute: MessagesConvIdRoute,
+  PPostIdRoute: PPostIdRoute,
+  UUsernameRoute: UUsernameRoute,
+  MessagesIndexRoute: MessagesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

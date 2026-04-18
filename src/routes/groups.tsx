@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
-import { Lock, Globe2, Plus, Users } from "lucide-react";
+import { Lock, Globe2, Plus, Users, Mail, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { Navbar } from "@/components/Navbar";
 import { BottomNav } from "@/components/BottomNav";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { UserAvatar } from "@/components/Avatar";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
@@ -20,7 +21,7 @@ export const Route = createFileRoute("/groups")({
   component: GroupsPage,
 });
 
-type Group = Tables<"groups"> & { member_count?: number; is_member?: boolean };
+type Group = Tables<"groups"> & { is_member?: boolean; pending_request?: boolean };
 
 function slugify(s: string) {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
@@ -31,6 +32,9 @@ function GroupsPage() {
   const navigate = useNavigate();
   const [groups, setGroups] = useState<Group[]>([]);
   const [myGroups, setMyGroups] = useState<Group[]>([]);
+  const [invites, setInvites] = useState<
+    Array<Tables<"group_invites"> & { groups: Tables<"groups"> | null; profiles: Pick<Tables<"profiles">, "username"> | null }>
+  >([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
 
@@ -50,8 +54,38 @@ function GroupsPage() {
         .eq("user_id", user.id);
       const mineIds = new Set((mine ?? []).map((m) => m.group_id));
       list.forEach((g) => (g.is_member = mineIds.has(g.id)));
-      setMyGroups(
-        (mine ?? []).map((m) => ({ ...(m.groups as never as Group), is_member: true }))
+      setMyGroups((mine ?? []).map((m) => ({ ...(m.groups as never as Group), is_member: true })));
+
+      // Pending join requests by this user
+      const { data: reqs } = await supabase
+        .from("group_join_requests")
+        .select("group_id")
+        .eq("user_id", user.id)
+        .eq("status", "pending");
+      const reqIds = new Set((reqs ?? []).map((r) => r.group_id));
+      list.forEach((g) => (g.pending_request = reqIds.has(g.id)));
+
+      // Pending invites for this user
+      const { data: inv } = await supabase
+        .from("group_invites")
+        .select("*, groups(*)")
+        .eq("invitee_id", user.id)
+        .eq("status", "pending");
+      // fetch inviter profiles
+      const inviterIds = Array.from(new Set((inv ?? []).map((i) => i.inviter_id)));
+      let inviterMap: Record<string, { username: string }> = {};
+      if (inviterIds.length > 0) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("id, username")
+          .in("id", inviterIds);
+        inviterMap = Object.fromEntries((profs ?? []).map((p) => [p.id, { username: p.username }]));
+      }
+      setInvites(
+        ((inv ?? []) as any[]).map((i) => ({
+          ...i,
+          profiles: inviterMap[i.inviter_id] ?? null,
+        })) as any,
       );
     }
     setGroups(list);
@@ -63,15 +97,36 @@ function GroupsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  const join = async (groupId: string) => {
+  const requestOrJoin = async (g: Group) => {
     if (!user) {
       navigate({ to: "/auth" });
       return;
     }
-    const { error } = await supabase.from("group_members").insert({ group_id: groupId, user_id: user.id });
+    if (g.privacy === "public") {
+      const { error } = await supabase.from("group_members").insert({ group_id: g.id, user_id: user.id });
+      if (error) toast.error(error.message);
+      else {
+        toast.success("Joined!");
+        load();
+      }
+    } else {
+      const { error } = await supabase.from("group_join_requests").insert({ group_id: g.id, user_id: user.id });
+      if (error) toast.error(error.message);
+      else {
+        toast.success("Request sent. The owner will review it.");
+        load();
+      }
+    }
+  };
+
+  const respondInvite = async (inviteId: string, accept: boolean) => {
+    const { error } = await supabase
+      .from("group_invites")
+      .update({ status: accept ? "accepted" : "declined", responded_at: new Date().toISOString() })
+      .eq("id", inviteId);
     if (error) toast.error(error.message);
     else {
-      toast.success("Joined!");
+      toast.success(accept ? "Joined the group!" : "Invite declined");
       load();
     }
   };
@@ -106,11 +161,41 @@ function GroupsPage() {
           )}
         </header>
 
+        {invites.length > 0 && (
+          <section>
+            <h2 className="font-display text-xl font-bold mb-3 flex items-center gap-2">
+              <Mail className="h-5 w-5 text-primary" /> Invites
+            </h2>
+            <ul className="space-y-2">
+              {invites.map((iv) => (
+                <li
+                  key={iv.id}
+                  className="flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 p-3"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm">
+                      <span className="font-semibold">@{iv.profiles?.username ?? "someone"}</span>{" "}
+                      invited you to{" "}
+                      <span className="font-semibold">{iv.groups?.name}</span>
+                    </p>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={() => respondInvite(iv.id, false)}>
+                    Decline
+                  </Button>
+                  <Button size="sm" onClick={() => respondInvite(iv.id, true)} className="bg-gradient-sunset border-0">
+                    Accept
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {user && myGroups.length > 0 && (
           <section>
             <h2 className="font-display text-xl font-bold mb-3">Your groups</h2>
             <div className="grid gap-3 sm:grid-cols-2">
-              {myGroups.map((g) => <GroupCard key={g.id} group={g} onJoin={join} />)}
+              {myGroups.map((g) => <GroupCard key={g.id} group={g} onAction={requestOrJoin} />)}
             </div>
           </section>
         )}
@@ -123,7 +208,7 @@ function GroupsPage() {
             <p className="text-muted-foreground text-sm">No groups yet — be the first to start one.</p>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
-              {groups.map((g) => <GroupCard key={g.id} group={g} onJoin={join} />)}
+              {groups.map((g) => <GroupCard key={g.id} group={g} onAction={requestOrJoin} />)}
             </div>
           )}
         </section>
@@ -133,7 +218,7 @@ function GroupsPage() {
   );
 }
 
-function GroupCard({ group, onJoin }: { group: Group; onJoin: (id: string) => void }) {
+function GroupCard({ group, onAction }: { group: Group; onAction: (g: Group) => void }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-card">
       <div className="relative h-28 bg-gradient-ember">
@@ -157,8 +242,14 @@ function GroupCard({ group, onJoin }: { group: Group; onJoin: (id: string) => vo
             <Link to="/groups/$slug" params={{ slug: group.slug }}>
               <Button size="sm" variant="outline">Open</Button>
             </Link>
+          ) : group.pending_request ? (
+            <Button size="sm" variant="outline" disabled>
+              <Clock className="h-3 w-3" /> Requested
+            </Button>
           ) : (
-            <Button size="sm" onClick={() => onJoin(group.id)} className="bg-gradient-sunset border-0">Join</Button>
+            <Button size="sm" onClick={() => onAction(group)} className="bg-gradient-sunset border-0">
+              {group.privacy === "public" ? "Join" : "Request"}
+            </Button>
           )}
         </div>
       </div>
@@ -188,7 +279,6 @@ function CreateGroupForm({ userId, onCreated }: { userId: string; onCreated: (sl
       toast.error(error?.message || "Could not create group");
       return;
     }
-    // Create a group conversation
     const { data: conv } = await supabase
       .from("conversations")
       .insert({ type: "group", group_id: g.id, created_by: userId })
@@ -226,6 +316,9 @@ function CreateGroupForm({ userId, onCreated }: { userId: string; onCreated: (sl
             </button>
           ))}
         </div>
+        <p className="text-xs text-muted-foreground">
+          {privacy === "public" ? "Anyone can join instantly." : "People must request to join, and you approve."}
+        </p>
       </div>
       <Button type="submit" disabled={submitting} className="w-full bg-gradient-sunset border-0">
         {submitting ? "Creating..." : "Create group"}

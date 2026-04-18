@@ -14,7 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      posts: {
+        Row: {
+          caption: string | null
+          country: string | null
+          created_at: string
+          id: string
+          image_url: string
+          location: string
+          title: string
+          user_id: string
+          visited_at: string | null
+        }
+        Insert: {
+          caption?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          image_url: string
+          location: string
+          title: string
+          user_id: string
+          visited_at?: string | null
+        }
+        Update: {
+          caption?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string
+          location?: string
+          title?: string
+          user_id?: string
+          visited_at?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          instagram: string | null
+          tiktok: string | null
+          twitter: string | null
+          updated_at: string
+          username: string
+          website: string | null
+          youtube: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          id: string
+          instagram?: string | null
+          tiktok?: string | null
+          twitter?: string | null
+          updated_at?: string
+          username: string
+          website?: string | null
+          youtube?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          instagram?: string | null
+          tiktok?: string | null
+          twitter?: string | null
+          updated_at?: string
+          username?: string
+          website?: string | null
+          youtube?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

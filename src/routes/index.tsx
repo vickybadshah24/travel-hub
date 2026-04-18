@@ -23,7 +23,7 @@ function Index() {
       .select("*, profiles(username, display_name, avatar_url)")
       .order("created_at", { ascending: false })
       .limit(6)
-      .then(({ data }) => setPosts((data as Post[]) ?? []));
+      .then(({ data }) => setPosts((data as unknown as Post[]) ?? []));
   }, []);
 
   return (

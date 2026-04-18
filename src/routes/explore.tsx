@@ -22,7 +22,7 @@ function Explore() {
       .select("*, profiles(username, display_name, avatar_url)")
       .order("created_at", { ascending: false })
       .then(({ data }) => {
-        setPosts((data as Post[]) ?? []);
+        setPosts((data as unknown as Post[]) ?? []);
         setLoading(false);
       });
   }, []);

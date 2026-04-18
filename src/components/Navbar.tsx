@@ -1,10 +1,21 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Compass, LogOut, Plus, User as UserIcon, Users, MessageCircle } from "lucide-react";
+import { Bell, Compass, LogOut, Plus, User as UserIcon, Users, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
+import { useUnreadCounts } from "@/hooks/use-unread-counts";
+
+function NavBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span className="absolute -right-0.5 -top-0.5 inline-flex min-w-[16px] items-center justify-center rounded-full bg-gradient-sunset px-1 text-[10px] font-bold leading-[16px] text-primary-foreground shadow-glow">
+      {count > 9 ? "9+" : count}
+    </span>
+  );
+}
 
 export function Navbar() {
   const { user, signOut } = useAuth();
+  const { notifications, messages } = useUnreadCounts();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -31,8 +42,11 @@ export function Navbar() {
           </Link>
           {user ? (
             <>
+              <Link to="/notifications" className="hidden md:inline-flex">
+                <Button variant="ghost" size="icon" className="relative"><Bell className="h-4 w-4" /><NavBadge count={notifications} /></Button>
+              </Link>
               <Link to="/messages" className="hidden md:inline-flex">
-                <Button variant="ghost" size="icon"><MessageCircle className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" className="relative"><MessageCircle className="h-4 w-4" /><NavBadge count={messages} /></Button>
               </Link>
               <Link to="/new">
                 <Button size="sm" className="bg-gradient-sunset hover:opacity-90 border-0 shadow-glow">

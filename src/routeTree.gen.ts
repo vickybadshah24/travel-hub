@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as NewRouteImport } from './routes/new'
 import { Route as GroupsRouteImport } from './routes/groups'
 import { Route as ExploreRouteImport } from './routes/explore'
@@ -24,6 +25,11 @@ import { Route as GroupsSlugRouteImport } from './routes/groups.$slug'
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NewRoute = NewRouteImport.update({
@@ -83,6 +89,7 @@ export interface FileRoutesByFullPath {
   '/explore': typeof ExploreRoute
   '/groups': typeof GroupsRouteWithChildren
   '/new': typeof NewRoute
+  '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
   '/groups/$slug': typeof GroupsSlugRoute
   '/messages/$convId': typeof MessagesConvIdRoute
@@ -96,6 +103,7 @@ export interface FileRoutesByTo {
   '/explore': typeof ExploreRoute
   '/groups': typeof GroupsRouteWithChildren
   '/new': typeof NewRoute
+  '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
   '/groups/$slug': typeof GroupsSlugRoute
   '/messages/$convId': typeof MessagesConvIdRoute
@@ -110,6 +118,7 @@ export interface FileRoutesById {
   '/explore': typeof ExploreRoute
   '/groups': typeof GroupsRouteWithChildren
   '/new': typeof NewRoute
+  '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
   '/groups/$slug': typeof GroupsSlugRoute
   '/messages/$convId': typeof MessagesConvIdRoute
@@ -125,6 +134,7 @@ export interface FileRouteTypes {
     | '/explore'
     | '/groups'
     | '/new'
+    | '/notifications'
     | '/profile'
     | '/groups/$slug'
     | '/messages/$convId'
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/explore'
     | '/groups'
     | '/new'
+    | '/notifications'
     | '/profile'
     | '/groups/$slug'
     | '/messages/$convId'
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/explore'
     | '/groups'
     | '/new'
+    | '/notifications'
     | '/profile'
     | '/groups/$slug'
     | '/messages/$convId'
@@ -165,6 +177,7 @@ export interface RootRouteChildren {
   ExploreRoute: typeof ExploreRoute
   GroupsRoute: typeof GroupsRouteWithChildren
   NewRoute: typeof NewRoute
+  NotificationsRoute: typeof NotificationsRoute
   ProfileRoute: typeof ProfileRoute
   MessagesConvIdRoute: typeof MessagesConvIdRoute
   PPostIdRoute: typeof PPostIdRoute
@@ -179,6 +192,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/new': {
@@ -271,6 +291,7 @@ const rootRouteChildren: RootRouteChildren = {
   ExploreRoute: ExploreRoute,
   GroupsRoute: GroupsRouteWithChildren,
   NewRoute: NewRoute,
+  NotificationsRoute: NotificationsRoute,
   ProfileRoute: ProfileRoute,
   MessagesConvIdRoute: MessagesConvIdRoute,
   PPostIdRoute: PPostIdRoute,
@@ -280,3 +301,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
